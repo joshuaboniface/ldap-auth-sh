@@ -14,6 +14,13 @@ ldap-auth-sh is known to work with:
 
 However, it's of course not limited to these platforms.
 
+This fork adds an additional authentication type, `ldapsearch_searchdn`,
+which supports using an external search DN (e.g. an administrator account)
+to find a user based on the `FILTER` and get its DN and other `ATTRS`,
+then uses `ldapwhoami` to perform the actual authentication. This allows
+one to use any LDAP field to find the user they wish. An example config is
+provided in the `examples/` folder.
+
 
 Requirements
 ------------
