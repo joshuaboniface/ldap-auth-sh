@@ -142,6 +142,25 @@ ldap_auth_ldapsearch() {
 	return 0
 }
 
+ldap_auth_ldapsearch_searchdn() {
+	common_opts="-o nettimeout=$TIMEOUT -H $SERVER -x"
+	[ -z "$DEBUG" ] || common_opts="-v $common_opts"
+	# Find the user by using the admin DN
+	output=$(
+		ldapsearch $common_opts -LLL \
+		-o ldif-wrap=no \
+		-D "$SEARCHDN" -w "$SEARCHPW" \
+		-s "sub" -b "$BASEDN" "$FILTER" dn $ATTRS
+	)
+	USERDN="$( echo "$output" | grep '^dn:' | sed 's/dn: //' )"
+	[ -z "$USERDN" ] && return 1
+
+	# Attempt to bind as the user DN (authentication)
+	_=$( ldapwhoami $common_opts -D "$USERDN" -w "$password" )
+	[ $? -ne 0 ] && return 1
+	return 0
+}
+
 
 # Source the config file.
 if [ -z "$1" ]; then
@@ -203,6 +222,9 @@ case "$CLIENT" in
 	"ldapsearch")
 		ldap_auth_ldapsearch
 		;;
+	"ldapsearch_searchdn")
+		ldap_auth_ldapsearch_searchdn
+		;;
 	*)
 		log "Unsupported client '$CLIENT', revise the configuration."
 		exit 2
@@ -223,7 +245,7 @@ if [ ! -z "$DEBUG" ]; then
 		Number of entries: $entries
 		Client output:
 		$output
-		EOF
+EOF
 fi
 
 if [ $result -ne 0 ]; then
